@@ -1,0 +1,24 @@
+./distributed_train.sh 4 /data/imagenet \
+--model seresnet34 \
+--sched cosine \
+--epochs 150 \
+--warmup-epochs 5 \
+--lr 0.4 \
+--reprob 0.5 \
+--remode pixel \
+--batch-size 256 \
+--amp -j 4
+
+
+python train.py /content/feedlane/data/subdata \
+--model "resnet18" \
+--sched cosine \
+--epochs 150 \
+--warmup-epochs 5 \
+--lr 0.4 \
+--reprob 0.5 \
+--remode pixel \
+--batch-size 64 \
+--amp -j 4 \
+--train-split train \
+--val-split val 
