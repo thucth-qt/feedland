@@ -23,8 +23,9 @@ python train.py /content/feedlane/data/subdata \
 --train-split train \
 --val-split val 
 
-python inference.py data/subdata/val/empty \
+python inference.py data/subdata/val/normal \
 --output_dir output/test \
 --model "resnet18" \
 --batch-size 64 \
---checkpoint ./output/train/20220611-070103-resnet18-224/checkpoint-52.pth.tar
+--checkpoint ./output/train/20220611-070103-resnet18-224/checkpoint-52.pth.tar \
+--topk 4
