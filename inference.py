@@ -19,6 +19,13 @@ from timm.utils import AverageMeter, setup_default_logging
 torch.backends.cudnn.benchmark = True
 _logger = logging.getLogger('inference')
 
+DICT_CLASSNAME = {
+    "empty": 0,
+    "full": 1,
+    "minimal": 2,
+    "normal": 3
+}
+
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Inference')
 parser.add_argument('data', metavar='DIR',
@@ -58,6 +65,7 @@ parser.add_argument('--topk', default=5, type=int,
 
 
 def main():
+    os.makedirs(f"/content/feedlane/output/test", exist_ok=True)
     setup_default_logging()
     args = parser.parse_args()
     # might as well try to do something useful...
@@ -116,11 +124,24 @@ def main():
 
     topk_ids = np.concatenate(topk_ids, axis=0)
 
+    # with open(os.path.join(args.output_dir, './topk_ids.csv'), 'w') as out_file:
+    #     filenames = loader.dataset.filenames(basename=True)
+    #     for filename, label in zip(filenames, topk_ids):
+    #         out_file.write('{0},{1}\n'.format(
+    #             filename, ','.join([ str(v) for v in label])))
+
+    count_true = 0
+
+    filenames = loader.dataset.filenames()
     with open(os.path.join(args.output_dir, './topk_ids.csv'), 'w') as out_file:
-        filenames = loader.dataset.filenames(basename=True)
+        # filenames = loader.dataset.filenames(basename=True)
         for filename, label in zip(filenames, topk_ids):
-            out_file.write('{0},{1}\n'.format(
-                filename, ','.join([ str(v) for v in label])))
+            is_true = True if DICT_CLASSNAME[filename.split("/")[0]] == label[0] else False
+            if is_true: count_true+=1
+            out_file.write('{0},{1},{2}\n'.format(
+                filename, ','.join([ str(v) for v in label]), is_true))
+
+    print("Score: ", count_true/len(filenames))
 
 
 if __name__ == '__main__':
