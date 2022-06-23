@@ -18,7 +18,8 @@ python train.py /content/feedlane/data/subdata \
 --lr 0.4 \
 --reprob 0.5 \
 --remode pixel \
---batch-size 64 \
+--batch-size 32 \
+--input-size 3 64 224 \
 --amp -j 4 \
 --train-split train \
 --val-split val 
