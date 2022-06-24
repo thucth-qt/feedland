@@ -42,12 +42,13 @@ def get_pred(output, topk=(1,)):
     _, pred = output.topk(maxk, 1, True, True)
     return pred.max(axis=1).indices
 
-def visualize(output, target, checkpoint, num_classes=4):
+def visualize(target, predict, checkpoint, num_classes=4):
     """Computes the confusion matrix and plot it"""
     # pred_onehot = nn.functional.one_hot(pred.max(axis=1).values, num_classes=num_classes)
     checkpoint = checkpoint.split("/")[-2]
-    os.makedirs(f"/content/feedlane/output/validate/{checkpoint}") 
-    cm = confusion_matrix(target, output)
+    if not os.path.isdir(f"/content/feedlane/output/validate/{checkpoint}"):
+        os.makedirs(f"/content/feedlane/output/validate/{checkpoint}") 
+    cm = confusion_matrix(target, predict)
     disp = ConfusionMatrixDisplay(confusion_matrix=cm)
     disp.plot()
     plt.savefig(f"/content/feedlane/output/validate/{checkpoint}/cm.jpg")

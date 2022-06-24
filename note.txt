@@ -69,4 +69,4 @@ python validate.py data/subdata/test \
 --model resnet18 \
 --batch-size 32 \
 --num-classes 4 \
---checkpoint ./output/train/20220624-073254-resnet18-224/model_best.pth.tar
+--checkpoint ./output/train/20220624-085415-resnet18-224/model_best.pth.tar
