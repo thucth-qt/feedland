@@ -3,6 +3,12 @@
 Hacked together by / Copyright 2020 Ross Wightman
 """
 
+import os
+import torch
+import torch.nn as nn
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+import cv2
 
 class AverageMeter:
     """Computes and stores the average and current value"""
@@ -30,3 +36,19 @@ def accuracy(output, target, topk=(1,)):
     pred = pred.t()
     correct = pred.eq(target.reshape(1, -1).expand_as(pred))
     return [correct[:min(k, maxk)].reshape(-1).float().sum(0) * 100. / batch_size for k in topk]
+
+def get_pred(output, topk=(1,)):
+    maxk = min(max(topk), output.size()[1])
+    _, pred = output.topk(maxk, 1, True, True)
+    return pred.max(axis=1).indices
+
+def visualize(output, target, checkpoint, num_classes=4):
+    """Computes the confusion matrix and plot it"""
+    # pred_onehot = nn.functional.one_hot(pred.max(axis=1).values, num_classes=num_classes)
+    checkpoint = checkpoint.split("/")[-2]
+    os.makedirs(f"/content/feedlane/output/validate/{checkpoint}") 
+    cm = confusion_matrix(target, output)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm)
+    disp.plot()
+    plt.savefig(f"/content/feedlane/output/validate/{checkpoint}/cm.jpg")
+    return None

@@ -22,7 +22,7 @@ from contextlib import suppress
 
 from timm.models import create_model, apply_test_time_pool, load_checkpoint, is_model, list_models
 from timm.data import create_dataset, create_loader, resolve_data_config, RealLabelsImagenet
-from timm.utils import accuracy, AverageMeter, natural_key, setup_default_logging, set_jit_fuser
+from timm.utils import accuracy, AverageMeter, natural_key, setup_default_logging, set_jit_fuser, visualize, get_pred
 
 has_apex = False
 try:
@@ -114,6 +114,8 @@ parser.add_argument('--valid-labels', default='', type=str, metavar='FILENAME',
 
 
 def validate(args):
+    PRED = []
+    TARGET = []
     # might as well try to validate something
     args.pretrained = args.pretrained or not args.checkpoint
     args.prefetcher = not args.no_prefetcher
@@ -241,6 +243,11 @@ def validate(args):
 
             # measure accuracy and record loss
             acc1, acc5 = accuracy(output.detach(), target, topk=(1, 5))
+            ################################################################################
+            pred = get_pred(output.detach())
+            PRED.extend(pred.cpu())
+            TARGET.extend(target.cpu())
+            ################################################################################
             losses.update(loss.item(), input.size(0))
             top1.update(acc1.item(), input.size(0))
             top5.update(acc5.item(), input.size(0))
@@ -276,6 +283,8 @@ def validate(args):
 
     _logger.info(' * Acc@1 {:.3f} ({:.3f}) Acc@5 {:.3f} ({:.3f})'.format(
        results['top1'], results['top1_err'], results['top5'], results['top5_err']))
+
+    visualize(TARGET, PRED, args.checkpoint)
 
     return results
 
