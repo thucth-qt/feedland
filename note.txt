@@ -12,19 +12,17 @@
 ################## train
 
 python train.py /content/feedlane/data/subdata \
---model "resnet18" \
+--model resnet18 \
 --sched cosine \
 --epochs 100 \
 --num-classes 4 \
 --warmup-epochs 5 \
---pretrained \
 --lr 0.4 \
 --reprob 0.5 \
 --remode pixel \
 --batch-size 32 \
---input-size 3 64 224 \
+--input-size 3 224 64 \
 --amp -j 4 \
---class-map /content/feedlane/classmap.txt \
 --train-split train \
 --val-split val 
 
@@ -62,7 +60,7 @@ python inference.py data/subdata/test \
 --model "resnet18" \
 --batch-size 32 \
 --num-classes 4 \
---checkpoint ./output/train/20220624-093717-resnet18-224/model_best.pth.tar \
+--checkpoint ./output/train/20220624-110520-resnet18-64/model_best.pth.tar \
 --topk 4
 
 ################## validate
@@ -71,5 +69,6 @@ python validate.py data/subdata/test \
 --model resnet18 \
 --batch-size 32 \
 --num-classes 4 \
+--checkpoint ./output/train/20220624-110520-resnet18-64/model_best.pth.tar
+
 --class-map /content/feedlane/classmap.txt \
---checkpoint ./output/train/20220624-092639-resnet18-224/model_best.pth.tar

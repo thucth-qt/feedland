@@ -40,7 +40,7 @@ def accuracy(output, target, topk=(1,)):
 def get_pred(output, topk=(1,)):
     maxk = min(max(topk), output.size()[1])
     _, pred = output.topk(maxk, 1, True, True)
-    return pred.max(axis=1).indices
+    return pred.t()[0]
 
 def visualize(target, predict, checkpoint, num_classes=4):
     """Computes the confusion matrix and plot it"""
@@ -48,7 +48,7 @@ def visualize(target, predict, checkpoint, num_classes=4):
     checkpoint = checkpoint.split("/")[-2]
     if not os.path.isdir(f"/content/feedlane/output/validate/{checkpoint}"):
         os.makedirs(f"/content/feedlane/output/validate/{checkpoint}") 
-    cm = confusion_matrix(target, predict)
+    cm = confusion_matrix(target, predict, labels=[i for i in range(num_classes)])
     disp = ConfusionMatrixDisplay(confusion_matrix=cm)
     disp.plot()
     plt.savefig(f"/content/feedlane/output/validate/{checkpoint}/cm.jpg")
