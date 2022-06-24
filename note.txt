@@ -9,6 +9,7 @@
 --batch-size 256 \
 --amp -j 4
 
+################## train
 
 python train.py /content/feedlane/data/subdata \
 --model "resnet18" \
@@ -26,12 +27,43 @@ python train.py /content/feedlane/data/subdata \
 --train-split train \
 --val-split val 
 
-python inference.py data/subdata/val/normal \
+python train.py /content/feedlane/data/subdata \
+--model efficientnet_b2 -b 128  \
+--sched step  \
+--num-classes 4 \
+--epochs 100  \
+--batch-size 32 \
+--pretrained \
+--input-size 3 64 224 \
+--decay-epochs 2.4  \
+--decay-rate .97  \
+--opt rmsproptf  \
+--opt-eps .001 -j 8  \
+--warmup-lr 1e-6  \
+--weight-decay 1e-5  \
+--drop 0.3  \
+--drop-path 0.2  \
+--model-ema  \
+--model-ema-decay 0.9999  \
+--aa rand-m9-mstd0.5  \
+--remode pixel  \
+--reprob 0.2  \
+--amp  \
+--lr .016 \
+--train-split train \
+--val-split val 
+
+################## inference
+
+python inference.py data/subdata/test \
 --output_dir output/test \
 --model "resnet18" \
---batch-size 64 \
---checkpoint ./output/train/20220611-070103-resnet18-224/checkpoint-52.pth.tar \
+--batch-size 32 \
+--num-classes 4 \
+--checkpoint ./output/train/20220624-073254-resnet18-224/model_best.pth.tar \
 --topk 4
+
+################## validate
 
 python validate.py data/subdata/test \
 --model resnet18 \
