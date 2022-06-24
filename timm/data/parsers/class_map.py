@@ -15,5 +15,6 @@ def load_class_map(map_or_filename, root=''):
             class_to_idx = {v.strip(): k for k, v in enumerate(f)}
     else:
         assert False, f'Unsupported class map file extension ({class_map_ext}).'
+    print("############ ", class_to_idx)
     return class_to_idx
 

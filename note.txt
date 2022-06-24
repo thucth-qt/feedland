@@ -14,7 +14,7 @@
 python train.py /content/feedlane/data/subdata \
 --model "resnet18" \
 --sched cosine \
---epochs 150 \
+--epochs 100 \
 --num-classes 4 \
 --warmup-epochs 5 \
 --pretrained \
@@ -24,6 +24,7 @@ python train.py /content/feedlane/data/subdata \
 --batch-size 32 \
 --input-size 3 64 224 \
 --amp -j 4 \
+--class-map /content/feedlane/classmap.txt \
 --train-split train \
 --val-split val 
 
@@ -31,6 +32,7 @@ python train.py /content/feedlane/data/subdata \
 --model efficientnet_b2 -b 128  \
 --sched step  \
 --num-classes 4 \
+--class-map /content/feedlane/classmap.txt \
 --epochs 100  \
 --batch-size 32 \
 --pretrained \
@@ -60,7 +62,7 @@ python inference.py data/subdata/test \
 --model "resnet18" \
 --batch-size 32 \
 --num-classes 4 \
---checkpoint ./output/train/20220624-073254-resnet18-224/model_best.pth.tar \
+--checkpoint ./output/train/20220624-093717-resnet18-224/model_best.pth.tar \
 --topk 4
 
 ################## validate
@@ -69,4 +71,5 @@ python validate.py data/subdata/test \
 --model resnet18 \
 --batch-size 32 \
 --num-classes 4 \
---checkpoint ./output/train/20220624-085415-resnet18-224/model_best.pth.tar
+--class-map /content/feedlane/classmap.txt \
+--checkpoint ./output/train/20220624-092639-resnet18-224/model_best.pth.tar
