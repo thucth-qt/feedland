@@ -76,10 +76,9 @@ python inference.py data/subdata/test \
 
 ################## validate
 
-python validate.py data/subdata/test \
---model resnet18 \
+python validate.py /content/feedlane/dataset/classified_data/val \
+--model efficientnet_b0 \
 --batch-size 32 \
---num-classes 4 \
---checkpoint ./output/train/20220624-110520-resnet18-64/model_best.pth.tar
-
---class-map /content/feedlane/classmap.txt \
+--num-classes 3 \
+--checkpoint output/train/20220627-165149-efficientnet_b0-224/model_best.pth.tar \
+--class-map /content/feedlane/classmap.txt 
