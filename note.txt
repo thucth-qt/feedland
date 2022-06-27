@@ -53,6 +53,17 @@ python train.py /content/feedlane/data/subdata \
 --train-split train \
 --val-split val 
 
+python train.py /content/feedlane/dataset/classified_data \
+--model efficientnet_b0 \
+--sched step  \
+--num-classes 3 \
+--class-map /content/feedlane/classmap.txt \
+--epochs 450 \
+--drop 0.1 \
+--drop-path 0.1 \
+--amp \
+--lr .1
+
 ################## inference
 
 python inference.py data/subdata/test \
