@@ -1,4 +1,4 @@
-import os
+import os, glob
 import cv2
 import numpy as np
 
@@ -34,6 +34,24 @@ def cut_img(img_path, lst_pts, out_dir_path, out_size=(224,224)):
         out_file_path = os.path.join(out_dir_path,f"{img_name}_{i}.jpg")
         crop_and_rotate(img, np.float32(pts), out_file_path, out_size)
 
+def padded_img(src_dir_path, padded_img_size = (72,72,3), dst_dir_name="padded"):
+    src_dir_name = src_dir_path.split("/")[-1]
+    dst_dir_name = src_dir_name + "_" + dst_dir_name
+    for r, d, f in os.walk(src_dir_path):
+        out_dir_path = r.replace(src_dir_name, dst_dir_name)
+        os.makedirs(out_dir_path, exist_ok=True)
+        for file in f:
+            if '.jpg' in file:
+                file_path = os.path.join(r, file)
+                img = cv2.imread(file_path)
+                h, w, c = img.shape 
+                padded_img = np.ones(padded_img_size)*1
+                padded_img[:h,:w,:] = img
+                file_out_path = file_path.replace(src_dir_name, dst_dir_name)
+                cv2.imwrite(file_out_path, padded_img)
+
+    return 
+
 if __name__ == "__main__":
     lst_pts = [
         [
@@ -57,4 +75,5 @@ if __name__ == "__main__":
           1065.6637168141592]
         ]
     ]
-    cut_img("/content/feedlane/data/images/01bac556-10_162_33_97_20220619_180820.jpg", lst_pts, "/content/feedlane/data")
+    # cut_img("/content/feedlane/data/images/01bac556-10_162_33_97_20220619_180820.jpg", lst_pts, "/content/feedlane/data")
+    padded_img("/Users/conglinh/document/FreeLance/feedlane/data/classified_data")

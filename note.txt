@@ -53,16 +53,35 @@ python train.py /content/feedlane/data/subdata \
 --train-split train \
 --val-split val 
 
-python train.py /content/feedlane/dataset/classified_data \
+################## TRAIN ON NEW dataset
+python train.py /content/feedlane/data/classified_data \
+--model resnet18 \
+--sched step \
+--epochs 100 \
+--class-map /content/feedlane/classmap.txt \
+--num-classes 3 \
+--warmup-epochs 5 \
+--lr 0.4 \
+--batch-size 32 \
+--input-size 3 48 48 \
+--amp -j 4 \
+--train-split train \
+--val-split val 
+
+python train.py /content/feedlane/data/classified_data \
 --model efficientnet_b0 \
 --sched step  \
 --num-classes 3 \
 --class-map /content/feedlane/classmap.txt \
 --epochs 450 \
+--batch-size 32 \
+--input-size 3 72 72 \
 --drop 0.1 \
 --drop-path 0.1 \
 --amp \
---lr .1
+--lr .1 \
+--train-split train \
+--val-split val 
 
 ################## inference
 
@@ -76,9 +95,18 @@ python inference.py data/subdata/test \
 
 ################## validate
 
-python validate.py /content/feedlane/dataset/classified_data/val \
+python validate.py /content/feedlane/data/classified_data/val \
 --model efficientnet_b0 \
 --batch-size 32 \
 --num-classes 3 \
---checkpoint output/train/20220627-165149-efficientnet_b0-224/model_best.pth.tar \
+--img-size 1024 \
+--checkpoint output/train/20220628-071518-efficientnet_b0-224/model_best.pth.tar \
+--class-map /content/feedlane/classmap.txt 
+
+python validate.py /content/feedlane/data/classified_data/val \
+--model resnet18 \
+--batch-size 32 \
+--num-classes 3 \
+--img-size 48 \
+--checkpoint output/train/20220628-094104-resnet18-48/model_best.pth.tar \
 --class-map /content/feedlane/classmap.txt 

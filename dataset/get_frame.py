@@ -10,7 +10,7 @@ PYTHON_PATH = os.path.join(os.path.dirname(__file__), '..')
 sys.path.insert(0, PYTHON_PATH)
 IPS_NOT_PINGABLE = ['10.162.33.50', '10.162.33.51', '10.162.33.52', '10.162.33.53', '10.162.33.54', '10.162.33.55', '10.162.33.56']
 
-def get_frame_manual(num_frame, time_interval, data_folder="./images"):
+def get_frame_manual(num_frame, time_interval, data_folder="./data/images"):
     IPS = [
         "10.162.33.58",
         "10.162.33.62",
@@ -75,7 +75,6 @@ def move_file(src_path, dst_path):
     for f in files:
         shutil.move(f, dst_path)
 if __name__=="__main__":
-    # get_frame_manual(1,0)
-    # get_frame_from_url()
-    move_file("/Users/conglinh/document/FreeLance/feedlane/images", "/Users/conglinh/document/FreeLance/feedlane/labelstudio")
+    get_frame_manual(1,0)
+    # move_file("/Users/conglinh/document/FreeLance/feedlane/images", "/Users/conglinh/document/FreeLance/feedlane/labelstudio")
     
