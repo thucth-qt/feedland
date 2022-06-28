@@ -284,7 +284,7 @@ def validate(args):
     _logger.info(' * Acc@1 {:.3f} ({:.3f}) Acc@5 {:.3f} ({:.3f})'.format(
        results['top1'], results['top1_err'], results['top5'], results['top5_err']))
 
-    visualize(TARGET, PRED, args.checkpoint)
+    visualize(TARGET, PRED, args.checkpoint, args.num_classes)
 
     return results
 
