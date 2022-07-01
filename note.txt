@@ -69,6 +69,27 @@ python train.py /content/feedlane/data/classified_data \
 --val-split val 
 
 python train.py /content/feedlane/data/classified_data \
+--model resnet50 \
+--pretrained \
+--sched cosine \
+--epochs 200 \
+--class-map /content/feedlane/classmap.txt \
+--num-classes 3 \
+--input-size 3 72 48 \
+--lr 0.05 \
+--amp \
+--remode pixel \
+--reprob 0.6 \
+--aug-splits 3 \
+--aa rand-m9-mstd0.5-inc1 \
+--resplit \
+--split-bn \
+--jsd \
+--dist-bn reduce \
+--train-split train \
+--val-split val 
+
+python train.py /content/feedlane/data/classified_data \
 --model efficientnet_b0 \
 --sched step  \
 --num-classes 3 \

@@ -76,5 +76,5 @@ def move_file(src_path, dst_path):
         shutil.move(f, dst_path)
 if __name__=="__main__":
     get_frame_manual(1,0)
-    # move_file("/Users/conglinh/document/FreeLance/feedlane/images", "/Users/conglinh/document/FreeLance/feedlane/labelstudio")
+    move_file("/Users/conglinh/document/FreeLance/feedlane/data/images", "/Users/conglinh/document/FreeLance/feedlane/data/labelstudio")
     
