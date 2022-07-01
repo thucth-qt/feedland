@@ -61,6 +61,7 @@ def create_dataset(
         download=False,
         batch_size=None,
         repeats=0,
+        task="classification",
         **kwargs
 ):
     """ Dataset factory method

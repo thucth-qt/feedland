@@ -71,7 +71,7 @@ python train.py /content/feedlane/data/classified_data \
 python train.py /content/feedlane/data/classified_data \
 --model efficientnet_b0 \
 --sched step  \
---num-classes 3 \
+--num-classes 4 \
 --class-map /content/feedlane/classmap.txt \
 --epochs 450 \
 --batch-size 32 \
@@ -80,6 +80,26 @@ python train.py /content/feedlane/data/classified_data \
 --drop-path 0.1 \
 --amp \
 --lr .1 \
+--train-split train \
+--val-split val 
+
+python train.py /content/feedlane/data/classified_data \
+--task regression \
+--model efficientnet_b0 \
+--sched step  \
+--num-classes 1 \
+--class-map /content/feedlane/classmap.txt \
+--epochs 450 \
+--batch-size 64 \
+--input-size 3 72 48 \
+--drop 0.1 \
+--drop-path 0.1 \
+--amp \
+--lr .001 \
+--sched plateau \
+--min-lr 0.0000001 \
+--eval-metric loss \
+--patience-epochs 5 \
 --train-split train \
 --val-split val 
 

@@ -34,7 +34,7 @@ from timm.models import create_model, safe_model_name, resume_checkpoint, load_c
 from timm.utils import setup_default_logging, random_seed, set_jit_fuser, ModelEmaV2,\
     get_outdir, CheckpointSaver, distribute_bn, update_summary, accuracy, AverageMeter,\
     dispatch_clip_grad, reduce_tensor
-from timm.loss import JsdCrossEntropy, BinaryCrossEntropy, SoftTargetCrossEntropy, BinaryCrossEntropy,\
+from timm.loss import MSE, JsdCrossEntropy, BinaryCrossEntropy, SoftTargetCrossEntropy, BinaryCrossEntropy,\
     LabelSmoothingCrossEntropy
 from timm.optim import create_optimizer_v2, optimizer_kwargs
 from timm.scheduler import create_scheduler
@@ -87,6 +87,8 @@ parser.add_argument('data_dir', metavar='DIR',
                     help='path to dataset')
 group.add_argument('--dataset', '-d', metavar='NAME', default='',
                     help='dataset type (default: ImageFolder/ImageTar if empty)')
+group.add_argument('--task', '-t', metavar='TASK', default='classification',
+                    help='(classification|regression)')
 group.add_argument('--train-split', metavar='NAME', default='train',
                     help='dataset train split (default: train)')
 group.add_argument('--val-split', metavar='NAME', default='validation',
@@ -530,12 +532,14 @@ def main():
         class_map=args.class_map,
         download=args.dataset_download,
         batch_size=args.batch_size,
-        repeats=args.epoch_repeats)
+        repeats=args.epoch_repeats,
+        task=args.task)
     dataset_eval = create_dataset(
         args.dataset, root=args.data_dir, split=args.val_split, is_training=False,
         class_map=args.class_map,
         download=args.dataset_download,
-        batch_size=args.batch_size)
+        batch_size=args.batch_size, 
+        task=args.task)
 
     # setup mixup / cutmix
     collate_fn = None
@@ -606,24 +610,30 @@ def main():
     )
 
     # setup loss function
-    if args.jsd_loss:
-        assert num_aug_splits > 1  # JSD only valid with aug splits set
-        train_loss_fn = JsdCrossEntropy(num_splits=num_aug_splits, smoothing=args.smoothing)
-    elif mixup_active:
-        # smoothing is handled with mixup target transform which outputs sparse, soft targets
-        if args.bce_loss:
-            train_loss_fn = BinaryCrossEntropy(target_threshold=args.bce_target_thresh)
+    if args.task=="classification":
+        if args.jsd_loss:
+            assert num_aug_splits > 1  # JSD only valid with aug splits set
+            train_loss_fn = JsdCrossEntropy(num_splits=num_aug_splits, smoothing=args.smoothing)
+        elif mixup_active:
+            # smoothing is handled with mixup target transform which outputs sparse, soft targets
+            if args.bce_loss:
+                train_loss_fn = BinaryCrossEntropy(target_threshold=args.bce_target_thresh)
+            else:
+                train_loss_fn = SoftTargetCrossEntropy()
+        elif args.smoothing:
+            if args.bce_loss:
+                train_loss_fn = BinaryCrossEntropy(smoothing=args.smoothing, target_threshold=args.bce_target_thresh)
+            else:
+                train_loss_fn = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
         else:
-            train_loss_fn = SoftTargetCrossEntropy()
-    elif args.smoothing:
-        if args.bce_loss:
-            train_loss_fn = BinaryCrossEntropy(smoothing=args.smoothing, target_threshold=args.bce_target_thresh)
-        else:
-            train_loss_fn = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
+            train_loss_fn = nn.CrossEntropyLoss()
+        train_loss_fn = train_loss_fn.cuda()
+        validate_loss_fn = nn.CrossEntropyLoss().cuda()
+    elif args.task == "regression":
+        train_loss_fn = MSE()
+        validate_loss_fn = MSE()
     else:
-        train_loss_fn = nn.CrossEntropyLoss()
-    train_loss_fn = train_loss_fn.cuda()
-    validate_loss_fn = nn.CrossEntropyLoss().cuda()
+        raise Exception ("Task not found! - ", args.task)
 
     # setup checkpoint saver and eval metric tracking
     eval_metric = args.eval_metric
