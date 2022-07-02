@@ -14,7 +14,7 @@ import torch
 
 from timm.models import create_model, apply_test_time_pool
 from timm.data import ImageDataset, create_loader, resolve_data_config
-from timm.utils import AverageMeter, setup_default_logging
+from timm.utils import AverageMeter, setup_default_logging, accuracy_reg
 
 torch.backends.cudnn.benchmark = True
 _logger = logging.getLogger('inference')
@@ -63,11 +63,18 @@ parser.add_argument('--no-test-pool', dest='no_test_pool', action='store_true',
 parser.add_argument('--topk', default=5, type=int,
                     metavar='N', help='Top-k to output to CSV')
 
+# label_dict = {
+#     "empty": 0.0,
+#     "minimal": 0.1,
+#     "normal": 0.2,
+#     "full": 0.3,
+# }
+
 label_dict = {
-    "empty": 0.0,
-    "minimal": 0.1,
-    "normal": 0.2,
-    "full": 0.3,
+    "empty": 0,
+    "minimal": 1,
+    "normal": 2,
+    "full": 3,
 }
 
 def main():
@@ -137,14 +144,16 @@ def main():
     #         out_file.write('{0},{1}\n'.format(
     #             filename, ','.join([ str(v) for v in label])))
 
-    count_true = 0
+    label = label_dict[args.data.split("/")[-1]]
+    labels = torch.tensor([label for i in range(len(outputs))])
+    acc = accuracy_reg(torch.unsqueeze(torch.tensor(outputs),1), torch.unsqueeze(labels,1), label_dict)
 
     filenames = loader.dataset.filenames()
     with open(os.path.join(args.output_dir, './regression_result.csv'), 'w') as out_file:
         for filename, output in zip(filenames, outputs):
             out_file.write('{0},{1}\n'.format(os.path.join(args.data,filename), output))
 
-    print("Score: ", count_true/len(filenames))
+    print("Score: ", acc)
 
 
 if __name__ == '__main__':

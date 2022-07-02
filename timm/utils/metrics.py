@@ -37,19 +37,25 @@ def accuracy(output, target, topk=(1,)):
     correct = pred.eq(target.reshape(1, -1).expand_as(pred))
     return [correct[:min(k, maxk)].reshape(-1).float().sum(0) * 100. / batch_size for k in topk]
 
-def accuracy_reg(outputs, labels, epsilon=0.05):
+def accuracy_reg(outputs, labels, label_dict):
     """Computes the accuracy over the k top predictions for the specified values of k"""
     batch_size = labels.size(0)
     preds = torch.squeeze(outputs)
     running_corrects = 0
+    empty = label_dict["empty"]
+    minimal = label_dict["minimal"]
+    normal = label_dict["normal"]
+    full = label_dict["full"]
+    epsilon= (full - normal)/2
+
     for idx, value in enumerate(labels):
-        if value == 0.0 and preds[idx] < value + epsilon:
+        if value == empty and preds[idx] < value + epsilon:
             running_corrects += 1
-        elif value == 0.1 and preds[idx] > value - epsilon and preds[idx] < value + epsilon:
+        elif value == minimal and preds[idx] > value - epsilon and preds[idx] < value + epsilon:
             running_corrects += 1
-        elif value == 0.2 and preds[idx] > value - epsilon and preds[idx] < value + epsilon:
+        elif value == normal and preds[idx] > value - epsilon and preds[idx] < value + epsilon:
             running_corrects += 1
-        elif value == 0.3 and preds[idx] > value - epsilon :
+        elif value == full and preds[idx] > value - epsilon :
             running_corrects += 1
     return torch.tensor(running_corrects / batch_size)
     # return [correct[:min(k, maxk)].reshape(-1).float().sum(0) * 100. / batch_size for k in topk]

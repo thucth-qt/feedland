@@ -138,7 +138,7 @@ python inference.py data/classified_data/val/full \
 --model "resnet18" \
 --batch-size 32 \
 --num-classes 1 \
---checkpoint ./output/train/20220702-100047-resnet18-48/model_best.pth.tar
+--checkpoint ./output/train/20220702-104830-resnet18-48/model_best.pth.tar
 
 ################## validate
 

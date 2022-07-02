@@ -67,11 +67,18 @@ try:
 except ImportError as e:
     has_functorch = False
 
+# label_dict = {
+#     "empty": 0.0,
+#     "minimal": 0.1,
+#     "normal": 0.2,
+#     "full": 0.3,
+# }
+
 label_dict = {
-    "empty": 0.0,
-    "minimal": 0.1,
-    "normal": 0.2,
-    "full": 0.3,
+    "empty": 0,
+    "minimal": 1,
+    "normal": 2,
+    "full": 3,
 }
 
 
@@ -853,7 +860,7 @@ def validate(model, loader, loss_fn, args, amp_autocast=suppress, log_suffix='')
             if args.task == "classification":
                 acc1, acc5 = accuracy(output, target, topk=(1, 5))
             elif args.task == "regression":
-                acc1 = accuracy_reg(output, target)
+                acc1 = accuracy_reg(output, target, label_dict)
                 acc5 = torch.tensor(100)
 
             if args.distributed:
