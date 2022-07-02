@@ -37,6 +37,23 @@ def accuracy(output, target, topk=(1,)):
     correct = pred.eq(target.reshape(1, -1).expand_as(pred))
     return [correct[:min(k, maxk)].reshape(-1).float().sum(0) * 100. / batch_size for k in topk]
 
+def accuracy_reg(outputs, labels, epsilon=0.05):
+    """Computes the accuracy over the k top predictions for the specified values of k"""
+    batch_size = labels.size(0)
+    preds = torch.squeeze(outputs)
+    running_corrects = 0
+    for idx, value in enumerate(labels):
+        if value == 0.0 and preds[idx] < value + epsilon:
+            running_corrects += 1
+        elif value == 0.1 and preds[idx] > value - epsilon and preds[idx] < value + epsilon:
+            running_corrects += 1
+        elif value == 0.2 and preds[idx] > value - epsilon and preds[idx] < value + epsilon:
+            running_corrects += 1
+        elif value == 0.3 and preds[idx] > value - epsilon :
+            running_corrects += 1
+    return torch.tensor(running_corrects / batch_size)
+    # return [correct[:min(k, maxk)].reshape(-1).float().sum(0) * 100. / batch_size for k in topk]
+
 def get_pred(output, topk=(1,)):
     maxk = min(max(topk), output.size()[1])
     _, pred = output.topk(maxk, 1, True, True)

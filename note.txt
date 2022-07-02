@@ -1,88 +1,4 @@
-./distributed_train.sh 4 /data/imagenet \
---model seresnet34 \
---sched cosine \
---epochs 150 \
---warmup-epochs 5 \
---lr 0.4 \
---reprob 0.5 \
---remode pixel \
---batch-size 256 \
---amp -j 4
-
-################## train
-
-python train.py /content/feedlane/data/subdata \
---model resnet18 \
---sched cosine \
---epochs 100 \
---num-classes 4 \
---warmup-epochs 5 \
---lr 0.4 \
---reprob 0.5 \
---remode pixel \
---batch-size 32 \
---input-size 3 224 64 \
---amp -j 4 \
---train-split train \
---val-split val 
-
-python train.py /content/feedlane/data/subdata \
---model efficientnet_b2 -b 128  \
---sched step  \
---num-classes 4 \
---class-map /content/feedlane/classmap.txt \
---epochs 100  \
---batch-size 32 \
---pretrained \
---input-size 3 64 224 \
---decay-epochs 2.4  \
---decay-rate .97  \
---opt rmsproptf  \
---opt-eps .001 -j 8  \
---warmup-lr 1e-6  \
---weight-decay 1e-5  \
---drop 0.3  \
---drop-path 0.2  \
---model-ema  \
---model-ema-decay 0.9999  \
---aa rand-m9-mstd0.5  \
---remode pixel  \
---reprob 0.2  \
---amp  \
---lr .016 \
---train-split train \
---val-split val 
-
-################## TRAIN ON NEW dataset
-python train.py /content/feedlane/data/classified_data \
---model resnet18 \
---sched step \
---epochs 100 \
---class-map /content/feedlane/classmap.txt \
---num-classes 3 \
---warmup-epochs 5 \
---lr 0.4 \
---batch-size 32 \
---input-size 3 48 48 \
---amp -j 4 \
---train-split train \
---val-split val 
-
-python train.py /content/feedlane/data/classified_data \
---model efficientnet_b0 \
---sched step  \
---num-classes 4 \
---class-map /content/feedlane/classmap.txt \
---epochs 450 \
---batch-size 32 \
---input-size 3 72 72 \
---drop 0.1 \
---drop-path 0.1 \
---amp \
---lr .1 \
---train-split train \
---val-split val 
-
+######################### TASK REGRESSION
 python train.py /content/feedlane/data/classified_data \
 --task regression \
 --model efficientnet_b0 \
@@ -103,30 +19,19 @@ python train.py /content/feedlane/data/classified_data \
 --train-split train \
 --val-split val 
 
+
 ################## inference
 
-python inference.py data/subdata/test \
---output_dir output/test \
---model "resnet18" \
---batch-size 32 \
---num-classes 4 \
---checkpoint ./output/train/20220624-110520-resnet18-64/model_best.pth.tar \
---topk 4
+python inference.py /content/feedlane_thucth/data/classified_data/val/minimal \
+--model efficientnet_b0 \
+--checkpoint /content/feedlane_thucth/output/train/20220702-101406-efficientnet_b0-48/model_best.pth.tar
 
 ################## validate
 
 python validate.py /content/feedlane/data/classified_data/val \
 --model efficientnet_b0 \
---batch-size 32 \
---num-classes 3 \
---img-size 1024 \
---checkpoint output/train/20220628-071518-efficientnet_b0-224/model_best.pth.tar \
---class-map /content/feedlane/classmap.txt 
-
-python validate.py /content/feedlane/data/classified_data/val \
---model resnet18 \
---batch-size 32 \
---num-classes 3 \
---img-size 48 \
---checkpoint output/train/20220628-094104-resnet18-48/model_best.pth.tar \
+--batch-size 4 \
+--num-classes 1 \
+--input-size 3 72 48 \
+--checkpoint /content/feedlane_thucth/output/train/20220702-101406-efficientnet_b0-48/model_best.pth.tar \
 --class-map /content/feedlane/classmap.txt 

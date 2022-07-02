@@ -315,6 +315,8 @@ def main():
     args = parser.parse_args()
     model_cfgs = []
     model_names = []
+    import pdb; pdb.set_trace()
+
     if os.path.isdir(args.checkpoint):
         # validate all checkpoints in a path with same model
         checkpoints = glob.glob(args.checkpoint + '/*.pth.tar')
@@ -358,6 +360,7 @@ def main():
         if len(results):
             write_results(results_file, results)
     else:
+        import pdb; pdb.set_trace()
         results = validate(args)
     # output results in JSON to stdout w/ delimiter for runner script
     print(f'--result\n{json.dumps(results, indent=4)}')
