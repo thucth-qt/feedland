@@ -32,7 +32,7 @@ from timm.data import create_dataset, create_loader, resolve_data_config, Mixup,
 from timm.models import create_model, safe_model_name, resume_checkpoint, load_checkpoint,\
     convert_splitbn_model, model_parameters
 from timm.utils import setup_default_logging, random_seed, set_jit_fuser, ModelEmaV2,\
-    get_outdir, CheckpointSaver, distribute_bn, update_summary, accuracy, AverageMeter,\
+    get_outdir, CheckpointSaver, distribute_bn, update_summary, accuracy, accuracy_reg, AverageMeter,\
     dispatch_clip_grad, reduce_tensor
 from timm.loss import MSE, JsdCrossEntropy, BinaryCrossEntropy, SoftTargetCrossEntropy, BinaryCrossEntropy,\
     LabelSmoothingCrossEntropy
@@ -66,6 +66,13 @@ try:
     has_functorch = True
 except ImportError as e:
     has_functorch = False
+
+label_dict = {
+    "empty": 0.0,
+    "minimal": 0.1,
+    "normal": 0.2,
+    "full": 0.3,
+}
 
 
 torch.backends.cudnn.benchmark = True
@@ -527,16 +534,18 @@ def main():
         _logger.info('Scheduled epochs: {}'.format(num_epochs))
 
     # create the train and eval datasets
+    class_map = args.class_map
+    if class_map is None or class_map == '': class_map = label_dict
     dataset_train = create_dataset(
         args.dataset, root=args.data_dir, split=args.train_split, is_training=True,
-        class_map=args.class_map,
+        class_map=class_map,
         download=args.dataset_download,
         batch_size=args.batch_size,
         repeats=args.epoch_repeats,
         task=args.task)
     dataset_eval = create_dataset(
         args.dataset, root=args.data_dir, split=args.val_split, is_training=False,
-        class_map=args.class_map,
+        class_map=class_map,
         download=args.dataset_download,
         batch_size=args.batch_size, 
         task=args.task)
@@ -841,7 +850,11 @@ def validate(model, loader, loss_fn, args, amp_autocast=suppress, log_suffix='')
                 target = target[0:target.size(0):reduce_factor]
 
             loss = loss_fn(output, target)
-            acc1, acc5 = accuracy(output, target, topk=(1, 5))
+            if args.task == "classification":
+                acc1, acc5 = accuracy(output, target, topk=(1, 5))
+            elif args.task == "regression":
+                acc1 = accuracy_reg(output, target)
+                acc5 = torch.tensor(100)
 
             if args.distributed:
                 reduced_loss = reduce_tensor(loss.data, args.world_size)

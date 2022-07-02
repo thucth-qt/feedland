@@ -63,11 +63,17 @@ parser.add_argument('--no-test-pool', dest='no_test_pool', action='store_true',
 parser.add_argument('--topk', default=5, type=int,
                     metavar='N', help='Top-k to output to CSV')
 
+label_dict = {
+    "empty": 0.0,
+    "minimal": 0.1,
+    "normal": 0.2,
+    "full": 0.3,
+}
 
 def main():
-    os.makedirs(f"/content/feedlane/output/test", exist_ok=True)
     setup_default_logging()
     args = parser.parse_args()
+    os.makedirs(args.output_dir, exist_ok=True)
     # might as well try to do something useful...
     args.pretrained = args.pretrained or not args.checkpoint
 
@@ -106,13 +112,14 @@ def main():
     k = min(args.topk, args.num_classes)
     batch_time = AverageMeter()
     end = time.time()
-    topk_ids = []
+    outputs = []
     with torch.no_grad():
         for batch_idx, (input, _) in enumerate(loader):
             input = input.cuda()
-            labels = model(input)
-            topk = labels.topk(k)[1]
-            topk_ids.append(topk.cpu().numpy())
+            output = model(input)
+            # topk = output.topk(k)[1]
+            # topk_ids.append(topk.cpu().numpy())
+            outputs.extend((torch.squeeze(output.cpu()).numpy()))
 
             # measure elapsed time
             batch_time.update(time.time() - end)
@@ -122,7 +129,7 @@ def main():
                 _logger.info('Predict: [{0}/{1}] Time {batch_time.val:.3f} ({batch_time.avg:.3f})'.format(
                     batch_idx, len(loader), batch_time=batch_time))
 
-    topk_ids = np.concatenate(topk_ids, axis=0)
+    # topk_ids = np.concatenate(topk_ids, axis=0)
 
     # with open(os.path.join(args.output_dir, './topk_ids.csv'), 'w') as out_file:
     #     filenames = loader.dataset.filenames(basename=True)
@@ -133,13 +140,9 @@ def main():
     count_true = 0
 
     filenames = loader.dataset.filenames()
-    with open(os.path.join(args.output_dir, './topk_ids.csv'), 'w') as out_file:
-        # filenames = loader.dataset.filenames(basename=True)
-        for filename, label in zip(filenames, topk_ids):
-            is_true = True if DICT_CLASSNAME[filename.split("/")[0]] == label[0] else False
-            if is_true: count_true+=1
-            out_file.write('{0},{1},{2}\n'.format(
-                filename, ','.join([ str(v) for v in label]), is_true))
+    with open(os.path.join(args.output_dir, './regression_result.csv'), 'w') as out_file:
+        for filename, output in zip(filenames, outputs):
+            out_file.write('{0},{1}\n'.format(os.path.join(args.data,filename), output))
 
     print("Score: ", count_true/len(filenames))
 

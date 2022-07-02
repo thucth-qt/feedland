@@ -4,6 +4,7 @@ import os
 def load_class_map(map_or_filename, root=''):
     if isinstance(map_or_filename, dict):
         assert dict, 'class_map dict must be non-empty'
+        print("*********** : ", map_or_filename)
         return map_or_filename
     class_map_path = map_or_filename
     if not os.path.exists(class_map_path):
