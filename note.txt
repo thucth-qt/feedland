@@ -133,12 +133,13 @@ python inference.py data/subdata/test \
 --checkpoint ./output/train/20220624-110520-resnet18-64/model_best.pth.tar \
 --topk 4
 
-python inference.py data/classified_data/val/full \
+python inference.py data/classified_data/val \
+--label-name full \
 --output_dir ./output/test \
 --model "resnet18" \
 --batch-size 32 \
 --num-classes 1 \
---checkpoint ./output/train/20220702-104830-resnet18-48/model_best.pth.tar
+--checkpoint ./output/train/20220703-060948-resnet18-48/checkpoint-44.pth.tar
 
 ################## validate
 
@@ -154,6 +155,6 @@ python validate.py /content/feedlane/data/classified_data/val \
 --model resnet18 \
 --batch-size 32 \
 --num-classes 3 \
---img-size 48 \
+--input-size 3 72 48 \
 --checkpoint output/train/20220628-094104-resnet18-48/model_best.pth.tar \
 --class-map /content/feedlane/classmap.txt 

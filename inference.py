@@ -30,6 +30,8 @@ DICT_CLASSNAME = {
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Inference')
 parser.add_argument('data', metavar='DIR',
                     help='path to dataset')
+parser.add_argument('--label-name', type=str, metavar='class', default='',
+                    help='specific class to inference or all class in dataset')
 parser.add_argument('--output_dir', metavar='DIR', default='./',
                     help='path to output files')
 parser.add_argument('--model', '-m', metavar='MODEL', default='dpn92',
@@ -81,6 +83,12 @@ def main():
     setup_default_logging()
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
+    data_paths = []
+    if args.label_name != '':
+        data_paths.append(os.path.join(args.data, args.label_name))
+    else:
+        for label in  os.listdir(args.data):
+            if label in label_dict.keys(): data_paths.append(os.path.join(args.data, label))
     # might as well try to do something useful...
     args.pretrained = args.pretrained or not args.checkpoint
 
@@ -102,58 +110,56 @@ def main():
         model = torch.nn.DataParallel(model, device_ids=list(range(args.num_gpu))).cuda()
     else:
         model = model.cuda()
-
-    loader = create_loader(
-        ImageDataset(args.data),
-        input_size=config['input_size'],
-        batch_size=args.batch_size,
-        use_prefetcher=True,
-        interpolation=config['interpolation'],
-        mean=config['mean'],
-        std=config['std'],
-        num_workers=args.workers,
-        crop_pct=1.0 if test_time_pool else config['crop_pct'])
+    loaders = []
+    for data_path in data_paths:
+        loader = create_loader(
+            ImageDataset(data_path),
+            input_size=config['input_size'],
+            batch_size=args.batch_size,
+            use_prefetcher=True,
+            interpolation=config['interpolation'],
+            mean=config['mean'],
+            std=config['std'],
+            num_workers=args.workers,
+            crop_pct=1.0 if test_time_pool else config['crop_pct'])
+        loaders.append(loader)
 
     model.eval()
 
     k = min(args.topk, args.num_classes)
     batch_time = AverageMeter()
     end = time.time()
-    outputs = []
-    with torch.no_grad():
-        for batch_idx, (input, _) in enumerate(loader):
-            input = input.cuda()
-            output = model(input)
-            # topk = output.topk(k)[1]
-            # topk_ids.append(topk.cpu().numpy())
-            outputs.extend((torch.squeeze(output.cpu()).numpy()))
+    acc = 0
+    count = 0
+    for idx, loader in enumerate(loaders):
+        outputs = []
+        with torch.no_grad():
+            for batch_idx, (input, _) in enumerate(loader):
+                input = input.cuda()
+                output = model(input)
+                # topk = output.topk(k)[1]
+                # topk_ids.append(topk.cpu().numpy())
+                outputs.extend((torch.squeeze(output.cpu()).numpy()))
 
-            # measure elapsed time
-            batch_time.update(time.time() - end)
-            end = time.time()
+                # measure elapsed time
+                batch_time.update(time.time() - end)
+                end = time.time()
 
-            if batch_idx % args.log_freq == 0:
-                _logger.info('Predict: [{0}/{1}] Time {batch_time.val:.3f} ({batch_time.avg:.3f})'.format(
-                    batch_idx, len(loader), batch_time=batch_time))
+                if batch_idx % args.log_freq == 0:
+                    _logger.info('Predict: [{0}/{1}] Time {batch_time.val:.3f} ({batch_time.avg:.3f})'.format(
+                        batch_idx, len(loader), batch_time=batch_time))
 
-    # topk_ids = np.concatenate(topk_ids, axis=0)
+        label = label_dict[data_paths[idx].split("/")[-1]]
+        labels = torch.tensor([label for i in range(len(outputs))])
+        acc += accuracy_reg(torch.unsqueeze(torch.tensor(outputs),1), torch.unsqueeze(labels,1), label_dict).item()*len(outputs)
+        count += len(outputs)
 
-    # with open(os.path.join(args.output_dir, './topk_ids.csv'), 'w') as out_file:
-    #     filenames = loader.dataset.filenames(basename=True)
-    #     for filename, label in zip(filenames, topk_ids):
-    #         out_file.write('{0},{1}\n'.format(
-    #             filename, ','.join([ str(v) for v in label])))
+        filenames = loader.dataset.filenames()
+        with open(os.path.join(args.output_dir, './regression_result.csv'), 'w') as out_file:
+            for filename, output in zip(filenames, outputs):
+                out_file.write('{0},{1}\n'.format(os.path.join(data_paths[idx],filename), output))
 
-    label = label_dict[args.data.split("/")[-1]]
-    labels = torch.tensor([label for i in range(len(outputs))])
-    acc = accuracy_reg(torch.unsqueeze(torch.tensor(outputs),1), torch.unsqueeze(labels,1), label_dict)
-
-    filenames = loader.dataset.filenames()
-    with open(os.path.join(args.output_dir, './regression_result.csv'), 'w') as out_file:
-        for filename, output in zip(filenames, outputs):
-            out_file.write('{0},{1}\n'.format(os.path.join(args.data,filename), output))
-
-    print("Score: ", acc)
+    print("Score: ", acc / count)
 
 
 if __name__ == '__main__':
