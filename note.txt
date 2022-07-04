@@ -88,10 +88,9 @@ python train.py /content/feedlane/data/classified_data \
 python train.py /content/feedlane/data/classified_data \
 --task regression \
 --model efficientnet_b0 \
---sched step  \
 --num-classes 1 \
 --class-map /content/feedlane/classmap.txt \
---epochs 450 \
+--epochs 200 \
 --batch-size 64 \
 --input-size 3 72 48 \
 --drop 0.1 \
@@ -99,7 +98,7 @@ python train.py /content/feedlane/data/classified_data \
 --amp \
 --lr .001 \
 --sched plateau \
---min-lr 0.0000001 \
+--min-lr 0.00001 \
 --eval-metric loss \
 --patience-epochs 5 \
 --train-split train \
@@ -107,15 +106,14 @@ python train.py /content/feedlane/data/classified_data \
 
 python train.py /content/feedlane/data/classified_data \
 --task regression \
---pretrained \
 --model resnet18 \
+--pretrained \
 --sched step  \
 --num-classes 1 \
 --epochs 200 \
 --batch-size 64 \
 --input-size 3 72 48 \
---drop 0.1 \
---drop-path 0.1 \
+--no-aug \
 --amp \
 --lr .001 \
 --sched plateau \
@@ -172,13 +170,14 @@ python train.py /content/feedlane/data/classified_data \
 
 ################## INFERENCE
 
-python inference.py data/subdata/test \
---output_dir output/test \
---model "resnet18" \
+python inference.py data/classified_data/val \
+--model efficientnet_b0 \
+--pretrained \
+--output_dir ./output/test \
 --batch-size 32 \
---num-classes 4 \
---checkpoint ./output/train/20220624-110520-resnet18-64/model_best.pth.tar \
---topk 4
+--num-classes 1 \
+--input-size 3 72 48 \
+--checkpoint ./output/train/20220704-100039-efficientnet_b0-48/model_best.pth.tar
 
 python inference.py data/classified_data/val \
 --model resnet18 \
@@ -187,7 +186,7 @@ python inference.py data/classified_data/val \
 --batch-size 64 \
 --num-classes 1 \
 --input-size 3 72 48 \
---checkpoint ./output/train/20220704-082946-resnet18-48/model_best.pth.tar
+--checkpoint ./output/train/20220704-102031-resnet18-48/model_best.pth.tar
 
 
 ################## VALIDATE
