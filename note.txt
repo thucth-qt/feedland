@@ -83,7 +83,8 @@ python train.py /content/feedlane/data/classified_data \
 --train-split train \
 --val-split val 
 
-######################### TASK REGRESSION
+######################### TASK REGRESSION #########################
+######################### TRAIN
 python train.py /content/feedlane/data/classified_data \
 --task regression \
 --model efficientnet_b0 \
@@ -106,6 +107,7 @@ python train.py /content/feedlane/data/classified_data \
 
 python train.py /content/feedlane/data/classified_data \
 --task regression \
+--pretrained \
 --model resnet18 \
 --sched step  \
 --num-classes 1 \
@@ -123,7 +125,52 @@ python train.py /content/feedlane/data/classified_data \
 --train-split train \
 --val-split val 
 
-################## inference
+python train.py /content/feedlane/data/classified_data \
+--model resnet50 \
+--task regression \
+--pretrained \
+--sched cosine \
+--epochs 200 \
+--class-map /content/feedlane/classmap.txt \
+--num-classes 1 \
+--input-size 3 72 48 \
+--lr 0.05 \
+--amp \
+--remode pixel \
+--reprob 0.6 \
+--aug-splits 3 \
+--aa rand-m9-mstd0.5-inc1 \
+--resplit \
+--split-bn \
+--jsd \
+--dist-bn reduce \
+--train-split train \
+--val-split val 
+
+
+python train.py /content/feedlane/data/classified_data \
+--model resnet34 \
+--task regression \
+--pretrained \
+--sched cosine \
+--epochs 10 \
+--class-map /content/feedlane/classmap.txt \
+--num-classes 1 \
+--input-size 3 72 48 \
+--lr 0.05 \
+--amp \
+--remode pixel \
+--reprob 0.6 \
+--aug-splits 3 \
+--aa rand-m9-mstd0.5-inc1 \
+--resplit \
+--split-bn \
+--jsd \
+--dist-bn reduce \
+--train-split train \
+--val-split val 
+
+################## INFERENCE
 
 python inference.py data/subdata/test \
 --output_dir output/test \
@@ -134,14 +181,16 @@ python inference.py data/subdata/test \
 --topk 4
 
 python inference.py data/classified_data/val \
---label-name full \
+--model resnet18 \
+--pretrained \
 --output_dir ./output/test \
---model "resnet18" \
---batch-size 32 \
+--batch-size 64 \
 --num-classes 1 \
---checkpoint ./output/train/20220703-060948-resnet18-48/checkpoint-44.pth.tar
+--input-size 3 72 48 \
+--checkpoint ./output/train/20220704-082946-resnet18-48/model_best.pth.tar
 
-################## validate
+
+################## VALIDATE
 
 python validate.py /content/feedlane/data/classified_data/val \
 --model efficientnet_b0 \

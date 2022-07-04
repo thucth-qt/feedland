@@ -15,6 +15,7 @@ import torch
 from timm.models import create_model, apply_test_time_pool
 from timm.data import ImageDataset, create_loader, resolve_data_config
 from timm.utils import AverageMeter, setup_default_logging, accuracy_reg
+import torch.nn.functional as F
 
 torch.backends.cudnn.benchmark = True
 _logger = logging.getLogger('inference')
@@ -83,6 +84,9 @@ def main():
     setup_default_logging()
     args = parser.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
+    result_file = os.path.join(args.output_dir, './regression_result.csv')
+    if os.path.isfile(result_file):
+        os.remove(result_file)
     data_paths = []
     if args.label_name != '':
         data_paths.append(os.path.join(args.data, args.label_name))
@@ -131,6 +135,8 @@ def main():
     end = time.time()
     acc = 0
     count = 0
+    LABELS = torch.tensor([])
+    OUTPUTS = torch.tensor([])
     for idx, loader in enumerate(loaders):
         outputs = []
         with torch.no_grad():
@@ -151,15 +157,19 @@ def main():
 
         label = label_dict[data_paths[idx].split("/")[-1]]
         labels = torch.tensor([label for i in range(len(outputs))])
+        LABELS = torch.cat((LABELS, labels))
+        OUTPUTS = torch.cat((OUTPUTS, torch.tensor(outputs)))
         acc += accuracy_reg(torch.unsqueeze(torch.tensor(outputs),1), torch.unsqueeze(labels,1), label_dict).item()*len(outputs)
         count += len(outputs)
 
         filenames = loader.dataset.filenames()
-        with open(os.path.join(args.output_dir, './regression_result.csv'), 'w') as out_file:
+        with open(result_file, 'a') as out_file:
             for filename, output in zip(filenames, outputs):
                 out_file.write('{0},{1}\n'.format(os.path.join(data_paths[idx],filename), output))
 
+    loss_ = F.mse_loss(OUTPUTS, LABELS)
     print("Score: ", acc / count)
+    print("MSELoss: ", loss_)
 
 
 if __name__ == '__main__':
