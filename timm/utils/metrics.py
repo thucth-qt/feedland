@@ -37,28 +37,40 @@ def accuracy(output, target, topk=(1,)):
     correct = pred.eq(target.reshape(1, -1).expand_as(pred))
     return [correct[:min(k, maxk)].reshape(-1).float().sum(0) * 100. / batch_size for k in topk]
 
-def accuracy_reg(outputs, labels, label_dict):
-    """Computes the accuracy over the k top predictions for the specified values of k"""
-    batch_size = labels.size(0)
-    preds = torch.squeeze(outputs)
-    running_corrects = 0
-    empty = label_dict["empty"]
-    minimal = label_dict["minimal"]
-    normal = label_dict["normal"]
-    full = label_dict["full"]
-    epsilon= (full - normal)/2
+def accuracy_reg(preds: torch.Tensor, targets: torch.Tensor, label_dict: dict, thresholds=[0.5,0.5,0.5]):  
+    pass
+    # assert len(thresholds) == 3
+    # assert preds.dim() == 1 and targets.dim() == 1
 
-    for idx, value in enumerate(labels):
-        if value == empty and preds[idx] < value + epsilon:
+    # size = targets.size(0)
+    # running_corrects = 0
+
+    # for idx, value in enumerate(targets):
+    #     if (value == label_dict["empty"] and preds[idx] < value + thresholds[0]) or \
+    #         (value == label_dict["minimal"] and preds[idx] > value - thresholds[0] and preds[idx] < value + thresholds[1]) or \
+    #         (value == label_dict["normal"] and preds[idx] > value - thresholds[1] and preds[idx] < value + thresholds[2]) or \
+    #         (value == label_dict["full"] and preds[idx] > value - thresholds[2]):
+
+    #         running_corrects += 1
+
+    # return running_corrects / size
+
+def accuracy_threshold(preds: torch.Tensor, targets: torch.Tensor, label_dict: dict, thresholds=[0.5,1.5,2.5]):  
+    assert len(thresholds) == 3
+    assert preds.dim() == 1 and targets.dim() == 1
+
+    size = targets.size(0)
+    running_corrects = 0
+
+    for idx, value in enumerate(targets):
+        if (value == label_dict["empty"] and preds[idx] < thresholds[0]) or \
+            (value == label_dict["minimal"] and preds[idx] < thresholds[1]) or \
+            (value == label_dict["normal"] and preds[idx] < thresholds[2]) or \
+            (value == label_dict["full"]  and preds[idx] >= thresholds[2]):
+
             running_corrects += 1
-        elif value == minimal and preds[idx] > value - epsilon and preds[idx] < value + epsilon:
-            running_corrects += 1
-        elif value == normal and preds[idx] > value - epsilon and preds[idx] < value + epsilon:
-            running_corrects += 1
-        elif value == full and preds[idx] > value - epsilon :
-            running_corrects += 1
-    return torch.tensor(running_corrects / batch_size)
-    # return [correct[:min(k, maxk)].reshape(-1).float().sum(0) * 100. / batch_size for k in topk]
+
+    return running_corrects / size
 
 def get_pred(output, topk=(1,)):
     maxk = min(max(topk), output.size()[1])

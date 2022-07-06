@@ -169,7 +169,6 @@ python train.py /content/feedlane/data/classified_data \
 --val-split val 
 
 ################## INFERENCE
-
 python inference.py data/classified_data/val \
 --model efficientnet_b0 \
 --pretrained \
@@ -186,7 +185,8 @@ python inference.py data/classified_data/val \
 --batch-size 64 \
 --num-classes 1 \
 --input-size 3 72 48 \
---checkpoint ./output/train/20220704-102031-resnet18-48/model_best.pth.tar
+--checkpoint ./output/train/20220704-094404-resnet18-48/model_best.pth.tar \
+--thresholds 0.85 1.96 2.33
 
 
 ################## VALIDATE
@@ -206,3 +206,12 @@ python validate.py /content/feedlane/data/classified_data/val \
 --input-size 3 72 48 \
 --checkpoint output/train/20220628-094104-resnet18-48/model_best.pth.tar \
 --class-map /content/feedlane/classmap.txt 
+
+################## CALIBRATION
+python calibrate.py data/classified_data/train \
+--model resnet18 \
+--pretrained \
+--batch-size 64 \
+--num-classes 1 \
+--input-size 3 72 48 \
+--checkpoint ./output/train/20220704-094404-resnet18-48/model_best.pth.tar

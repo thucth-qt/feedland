@@ -9,12 +9,13 @@ import os
 import time
 import argparse
 import logging
+from cv2 import threshold
 import numpy as np
 import torch
 
 from timm.models import create_model, apply_test_time_pool
 from timm.data import ImageDataset, create_loader, resolve_data_config
-from timm.utils import AverageMeter, setup_default_logging, accuracy_reg, accuracy_threshold
+from timm.utils import AverageMeter, setup_default_logging, accuracy_reg
 import torch.nn.functional as F
 
 torch.backends.cudnn.benchmark = True
@@ -65,8 +66,6 @@ parser.add_argument('--no-test-pool', dest='no_test_pool', action='store_true',
                     help='disable test time pool')
 parser.add_argument('--topk', default=5, type=int,
                     metavar='N', help='Top-k to output to CSV')
-parser.add_argument('--thresholds', default=[0.5, 1.5, 2.5], type=float, nargs="+",
-                    metavar='f f f', help='3 thresholds after calibrating')
 
 label_dict = {
     "empty": 0,
@@ -90,8 +89,6 @@ def main():
             if label in label_dict.keys(): data_paths.append(os.path.join(args.data, label))
     # might as well try to do something useful...
     args.pretrained = args.pretrained or not args.checkpoint
-    print(args.thresholds)
-    thresholds = args.thresholds
 
     # create model
     model = create_model(
@@ -127,44 +124,58 @@ def main():
 
     model.eval()
 
-    k = min(args.topk, args.num_classes)
     batch_time = AverageMeter()
     end = time.time()
-    acc = 0
-    count = 0
-    LABELS = torch.tensor([])
-    OUTPUTS = torch.tensor([])
+    OUTPUTS_DICT = {}
     for idx, loader in enumerate(loaders):
-        outputs = torch.tensor([])
+        OUTPUTS = torch.tensor([])
         with torch.no_grad():
-            for batch_idx, (input, _) in enumerate(loader):
+            for batch_idx, (input, label) in enumerate(loader):
                 input = input.cuda()
                 output = model(input)
-                outputs = torch.cat((outputs, torch.squeeze(output.cpu())))
+                OUTPUTS = torch.cat((OUTPUTS, torch.squeeze(output.cpu())))
 
                 # measure elapsed time
                 batch_time.update(time.time() - end)
                 end = time.time()
 
-                # if batch_idx % args.log_freq == 0:
-                #     _logger.info('Predict: [{0}/{1}] Time {batch_time.val:.3f} ({batch_time.avg:.3f})'.format(
-                #         batch_idx, len(loader), batch_time=batch_time))
-
-        label = label_dict[data_paths[idx].split("/")[-1]]
-        labels = torch.tensor([label for i in range(len(outputs))])
-        LABELS = torch.cat((LABELS, labels))
-        OUTPUTS = torch.cat((OUTPUTS, outputs))
-
-        filenames = loader.dataset.filenames()
-        with open(result_file, 'a') as out_file:
-            for filename, output in zip(filenames, outputs):
-                out_file.write('{0},{1}\n'.format(os.path.join(data_paths[idx],filename), output))
-
-    loss_ = F.mse_loss(OUTPUTS, LABELS)
-    acc = accuracy_threshold(OUTPUTS, LABELS, label_dict, thresholds)
+        class_ = data_paths[idx].split("/")[-1]
+        OUTPUTS_DICT[class_] = OUTPUTS
     
-    print("Total Score: ", acc)
-    print("Total MSELoss: ", loss_)
+    threshold_range = np.linspace(0, 1, 100, endpoint=False)
+
+    print(OUTPUTS_DICT.keys())
+
+    THRESHOLDS = []
+    CLASSES = ['empty', 'minimal', 'normal', 'full']
+
+    i = 0; j = 1
+    for idx in range(len(CLASSES) - 1):
+        best_acc = 0
+        best_thresold = 0
+        for threshold in threshold_range:
+            threshold = threshold + i
+            preds_i = OUTPUTS_DICT[CLASSES[i]]
+            preds_j = OUTPUTS_DICT[CLASSES[j]]
+            total_i = len(preds_i)
+            total_j = len(preds_j)
+            correct_i =  (preds_i < threshold).sum().item()
+            correct_j =  (preds_j >= threshold).sum().item()
+            acc = (correct_i + correct_j) / (total_i + total_j)
+            # acc_i = correct_i / total_i
+            # acc_j = correct_j / total_j
+            # acc = (2 * acc_i * acc_j) / (acc_i + acc_j)
+
+            if acc > best_acc:
+                best_acc = acc
+                best_thresold = threshold
+        i += 1; j+=1
+        
+        THRESHOLDS.append(best_thresold)
+
+    print(THRESHOLDS)
+
+    return THRESHOLDS
 
 
 if __name__ == '__main__':

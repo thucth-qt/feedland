@@ -5,7 +5,7 @@ from .cuda import ApexScaler, NativeScaler
 from .distributed import distribute_bn, reduce_tensor
 from .jit import set_jit_legacy, set_jit_fuser
 from .log import setup_default_logging, FormatterNoInfo
-from .metrics import AverageMeter, accuracy, accuracy_reg, visualize, get_pred
+from .metrics import AverageMeter, accuracy, accuracy_reg, visualize, get_pred, accuracy_threshold
 from .misc import natural_key, add_bool_arg
 from .model import unwrap_model, get_state_dict, freeze, unfreeze
 from .model_ema import ModelEma, ModelEmaV2
