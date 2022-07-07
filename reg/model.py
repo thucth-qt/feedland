@@ -1,27 +1,19 @@
+import os
+
 import torch
 from torch import nn
 from torch.nn import functional as F
-from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision import transforms, models
 import pytorch_lightning as pl
-import os
-import glob
-import cv2
 import numpy as np
 from torchmetrics.functional import accuracy
 import torchmetrics
 import seaborn as sn
-import pandas as pd
 import matplotlib.pyplot as plt
-import pytz
-from datetime import datetime
-import random
-import shutil
-from PIL import Image
-
-from dataset import FeedlaneDataset
 
 DATA_DIR = "/content/feedlane/data/classified_data"
+OUTPUT_DIR = "/content/feedlane/output"
+os.makedirs(os.path.join(OUTPUT_DIR, "test"), exist_ok=True)
 
 class DeepRegression(pl.LightningModule):
     def __init__(self):
@@ -116,87 +108,4 @@ class DeepRegression(pl.LightningModule):
     def set_transform(self, transform=None):
         self.transform = transform
 
-transform = {
-    'train':
-        transforms.Compose([
-            transforms.Resize((224,224)),
-            transforms.RandomAffine(0, shear=10, scale=(0.8,1.2)),
-            transforms.RandomVerticalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ]),
-    'val':
-        transforms.Compose([
-            transforms.Resize((224,224)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-        ])
-    }
-def dataloader(phase='train'):
-    assert phase in ['train', 'val']
-    dataset_ = FeedlaneDataset(root_dir=DATA_DIR, transform=transform[phase], phase=phase)
-    
-    shuffle = True 
-    if phase == 'val': shuffle = False
-    # Dataloader
-    return DataLoader(dataset_, batch_size=32, shuffle=shuffle)
 
-def prepare():
-    # model
-    model = DeepRegression()
-
-    ckpt_dir = "/content/feedlane/output/train/lightning_logs/top_val_loss_models"
-    os.makedirs(ckpt_dir, exist_ok=True)
-    # checkpoint callback
-    checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=ckpt_dir, save_top_k=2, monitor="val_loss")
-
-    # trainer
-    trainer = pl.Trainer(max_epochs=200, check_val_every_n_epoch=3, devices=1, accelerator="gpu", log_every_n_steps=3, callbacks=[checkpoint_callback])
-
-    return trainer, model, checkpoint_callback
-
-def train():
-    train_loader = dataloader('train')
-    val_loader = dataloader('val')
-
-    trainer, model, _ = prepare()
-    # training
-    trainer.fit(model, train_loader, val_loader)
-
-def test():
-    val_loader = dataloader('val')
-
-    trainer, model, checkpoint_callback = prepare()
-    # testing
-    trainer.test(model, val_loader, ckpt_path=checkpoint_callback.best_model_path)
-
-def validate(ckpt_path="/content/lightning_logs/top_val_loss_models/epoch=29-step=4800.ckpt"):
-    model = DeepRegression.load_from_checkpoint(ckpt_path)
-    # model.set_transform(transforms.ToTensor())
-    model.eval()
-
-    label_dict = {
-                'empty': 0.0,
-                'minimal': 1.0,
-                'normal': 2.0,
-                'full': 3.0,
-            }
-    classes = label_dict.keys()
-    for class_ in classes:
-        # class_ = ""
-        TARGETS = []
-        PREDS = []
-        for f in glob.glob(os.path.join("{0}/val/{1}".format(DATA_DIR,class_), "*.jpg")):
-            TARGETS.append(label_dict[class_])
-            # img = torch.tensor(cv2.imread(file))
-            img = Image.open(f)
-            img = transform['val'](img)
-            # import pdb;pdb.set_trace()
-            pred = model(img).detach().numpy().item()
-            PREDS.append(pred)
-        # import pdb;pdb.set_trace()
-        loss = F.mse_loss(torch.tensor(PREDS), torch.tensor(TARGETS))
-        print("{0} MSELoss: {1}".format(class_, loss))
-
-if __name__=="__main__":
-    validate("/content/feedlane/output/train/lightning_logs/lightning_logs/top_val_loss_models/epoch=92-step=13950.ckpt")

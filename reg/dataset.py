@@ -3,21 +3,34 @@ from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision import transforms, models
-import pytorch_lightning as pl
 import os
 import glob
-import cv2
 import numpy as np
 from torchmetrics.functional import accuracy
-import torchmetrics
-import seaborn as sn
-import pandas as pd
-import matplotlib.pyplot as plt
-import pytz
-from datetime import datetime
-import random
-import shutil
 from PIL import Image
+
+data_transform = {
+    'train':
+        transforms.Compose([
+            transforms.Resize((224,224)),
+            transforms.RandomAffine(0, shear=10, scale=(0.8,1.2)),
+            transforms.RandomVerticalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ]),
+    'val':
+        transforms.Compose([
+            transforms.Resize((224,224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ]),
+    'test':
+        transforms.Compose([
+            transforms.Resize((224,224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+    }
 
 class FeedlaneDataset(Dataset):
     def __init__(self, root_dir, transform=None, phase="train"):
@@ -32,7 +45,7 @@ class FeedlaneDataset(Dataset):
         }
         self.img_paths = []
         self.img_labels = []
-        self.img_extentions = ["*.jpg", "*.bmp", "*.png"]
+        self.img_extentions = ["*.jpg"]
         self.dataset_ratio = np.array([0.8, 0.2, 0]) # (train, val, test) ratio
         self.load_dataset()
 
