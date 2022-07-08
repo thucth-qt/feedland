@@ -7,10 +7,11 @@ import shutil
 from collections import deque
 import numpy as np
 import matplotlib.pyplot as plt
+plt.rcParams["figure.figsize"] = (20, 10)
 
 import cv2
 
-ORIGIN_IMG_DIR = "/Users/conglinh/document/FreeLance/feedlane/data/labelstudio"
+ORIGIN_IMG_DIR = "/home/thucth/thucth/OTHERS/Ron_project/feedland/dataset/raw_0702"
 
 class History:
     def __init__(self, max_depth=5):
@@ -48,14 +49,14 @@ if __name__ == "__main__":
         tailname = "_" + os.path.basename(image_path).split("_")[-1]
         basename = os.path.basename(image_path).replace(tailname, ".jpg")
         origin_img_path = os.path.join(ORIGIN_IMG_DIR, basename)
-        # print(image_path)
-        # print(origin_img_path)
+
         image = cv2.imread(str(image_path))
-        f = plt.figure(figsize=(8, 8))
-        f.add_subplot(2,1,2)
-        plt.imshow(cv2.imread(origin_img_path)[:,:,::-1])
-        f.add_subplot(2,1,1)
-        plt.imshow(cv2.resize(image, dsize=(0, 0), fx=150 / image.shape[1], fy=350 / image.shape[0])[:,:,::-1])
+        fig, ax = plt.subplots(1, 2, gridspec_kw={'width_ratios': [1, 3]})
+        fig.tight_layout()
+
+        ax[0].imshow(cv2.resize(image, dsize=(0, 0), fx=250 / image.shape[1], fy=700 / image.shape[0])[:, :, ::-1])
+        ax[1].imshow(cv2.imread(origin_img_path)[:, :, ::-1])
+
         # plt.show()
         plt.gcf().canvas.mpl_connect('key_press_event', press)        
         while not plt.waitforbuttonpress(): pass
