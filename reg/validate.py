@@ -48,6 +48,7 @@ def validate(ckpt_path, thresholds=[0.5,1.5,2.5]):
         # import pdb;pdb.set_trace()
         loss_ = F.mse_loss(torch.tensor(SUB_PREDS), torch.tensor(SUB_TARGETS))
         acc_ = accuracy_threshold(torch.tensor(SUB_PREDS), torch.tensor(SUB_TARGETS), FeedlaneConfig.LABEL_DICT, thresholds)
+        print("----------------------------------")
         print("{0} MSELoss: {1}".format(classname, loss_))
         print("{0} ACC: {1}".format(classname, acc_))
         TARGETS.extend(SUB_TARGETS)
@@ -62,11 +63,11 @@ def validate(ckpt_path, thresholds=[0.5,1.5,2.5]):
     loss_ = F.mse_loss(torch.tensor(PREDS), torch.tensor(TARGETS))
     acc = accuracy_threshold(torch.tensor(PREDS), torch.tensor(TARGETS), FeedlaneConfig.LABEL_DICT, thresholds)
     
-    print("----------------------------------")
-    print("\n\nTotal ACC: ", acc)
-    print("Total MSELoss: ", loss_)
+    print("\n")
+    print("===> Total ACC: {0}".format(acc))
+    print("===> Total MSELoss: {0}\n\n".format(loss_))
 
     return PREDS_DICT
 
 if __name__=="__main__":
-    validate(ckpt_path=FeedlaneConfig.CKPT_PATH, thresholds=[0.35000000000000003, 1.28, 2.07])
+    validate(ckpt_path=FeedlaneConfig.CKPT_PATH, thresholds=[0.5, 1.5, 2.07])
