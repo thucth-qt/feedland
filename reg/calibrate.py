@@ -15,13 +15,14 @@ def calibrate(ckpt_path):
 
     for idx in range(len(FeedlaneConfig.CLASSNAMES) - 1):
         best_acc = 0
-        best_thresold = 0
-        for threshold in threshold_range:
+        best_threshold = 0
+        preds_i = PREDS_DICT[FeedlaneConfig.CLASSNAMES[i]]
+        preds_j = PREDS_DICT[FeedlaneConfig.CLASSNAMES[j]]
+        total_i = len(preds_i)
+        total_j = len(preds_j)
+        for threshold in threshold_range[48:52]:
             threshold = threshold + i
-            preds_i = PREDS_DICT[FeedlaneConfig.CLASSNAMES[i]]
-            preds_j = PREDS_DICT[FeedlaneConfig.CLASSNAMES[j]]
-            total_i = len(preds_i)
-            total_j = len(preds_j)
+            
             correct_i =  (preds_i < threshold).sum().item()
             correct_j =  (preds_j >= threshold).sum().item()
             # acc = (correct_i + correct_j) / (total_i + total_j)
@@ -31,10 +32,10 @@ def calibrate(ckpt_path):
 
             if acc > best_acc:
                 best_acc = acc
-                best_thresold = threshold
+                best_threshold = threshold
         i += 1; j+=1
         
-        THRESHOLDS.append(best_thresold)
+        THRESHOLDS.append(best_threshold)
 
     print(THRESHOLDS)
 
