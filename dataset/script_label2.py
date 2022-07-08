@@ -97,6 +97,7 @@ if __name__ == "__main__":
         elif key == ord("r"):
             "reverse previous step"
             image_path, output_path = history.pop()
+            print(f"Undo {output_path} ======> {image_path}")
             shutil.move(output_path, image_path)
             continue
         # exit

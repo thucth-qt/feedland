@@ -242,3 +242,19 @@ if __name__ == "__main__":
             2, \
             out_size=(48, 72))
 
+    # import os, glob, shutil
+    # crop_data = "/Users/conglinh/document/FreeLance/feedlane/data/crop_data"
+    # output_dir = "/Users/conglinh/document/FreeLance/feedlane/data/classified_data/empty"
+    # ls_file_crop = glob.glob(os.path.join(crop_data, "*"))
+    # start_withs = []
+    # img_paths = []
+    # for start_with in start_withs:
+    #     img_paths.extend([x for x in ls_file_crop if os.path.basename(x).startswith(start_with)])
+
+    # print(f"Move {len(img_paths)} file to empty")
+
+    # for img_path in img_paths:
+    #     output_path = os.path.join(output_dir,os.path.basename(img_path))
+    #     # print(img_path + "===>" + output_path)
+    #     shutil.move(img_path, output_path)
+

@@ -4,14 +4,12 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
+import cv2
 import torch
 from torchvision import datasets, models, transforms
 import torch.nn as nn
 from torch.nn import functional as F
 import torch.optim as optim
-import torchmetrics
-from pylab import savefig
-import seaborn as sn
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 
@@ -135,11 +133,51 @@ class FeedLaneModel():
         disp = ConfusionMatrixDisplay(confusion_matrix=cm)
         disp.plot()
         plt.savefig('/content/feedlane/savemodel/pytorch/cm_reg.png')
+
+    def inference(self, file_path):
+        self.model.load_state_dict(torch.load(self.ckpt_path))
+        from torchvision import datasets, models, transforms
+
+        self.model.eval()
+        for param in self.model.parameters():
+            param.requires_grad = False
+
+        trans = transforms.Compose([
+                transforms.Resize((224,224)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])  
+            ]),
+
+        img = cv2.imread(file_path)
+        img = trans(img)
+        # import pdb;pdb.set_trace()
+        inputs = torch.unsqueeze(img, 0)
+
+        inputs = inputs.to(self.device)
+
+        outputs = torch.squeeze(self.model(inputs))
+        print(outputs)
     
 
 if __name__=="__main__":
-    dataset = FeedLaneDataset()
-    model = FeedLaneModel()
+    # dataset = FeedLaneDataset()
+    # model = FeedLaneModel()
     # model.train(dataset, 100)
-    model.validate(dataset)
+    # model.validate(dataset)
+    import shutil
+
+    ls_file = os.listdir("/Users/conglinh/document/FreeLance/feedlane/data/labelstudio")
+    for f in ls_file:
+        if '.jpg' in f:
+            try:
+                os.remove(os.path.join("/Users/conglinh/document/FreeLance/feedlane/data/data_Thuc/all_cam", f))
+            except:
+                pass
+
+    # for (root, dirs, file) in os.walk():
+    #     print(root)
+    #     for f in file:
+    #         if '.jpg' in f:
+    #             input = os.path.join(root, f)
+    #             shutil.move(input, "/Users/conglinh/document/FreeLance/feedlane/data/data_Thuc/all_cam")
     
