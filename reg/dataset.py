@@ -1,34 +1,32 @@
 import torch
-from torch import nn
-from torch.nn import functional as F
-from torch.utils.data import Dataset, DataLoader, random_split
-from torchvision import transforms, models
+from torch.utils.data import Dataset
+from torchvision import transforms
 import os
 import glob
-import numpy as np
-from torchmetrics.functional import accuracy
 from PIL import Image
+
+from config import FeedlaneConfig
 
 data_transform = {
     'train':
         transforms.Compose([
-            transforms.Resize((224,224)),
+            transforms.Resize(FeedlaneConfig.IMG_SIZE),
             transforms.RandomAffine(0, shear=10, scale=(0.8,1.2)),
             transforms.RandomVerticalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.Normalize(FeedlaneConfig.IMG_MEAN, FeedlaneConfig.IMG_STD)
         ]),
     'val':
         transforms.Compose([
-            transforms.Resize((224,224)),
+            transforms.Resize(FeedlaneConfig.IMG_SIZE),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.Normalize(FeedlaneConfig.IMG_MEAN, FeedlaneConfig.IMG_STD)
         ]),
     'test':
         transforms.Compose([
-            transforms.Resize((224,224)),
+            transforms.Resize(FeedlaneConfig.IMG_SIZE),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            transforms.Normalize(FeedlaneConfig.IMG_MEAN, FeedlaneConfig.IMG_STD)
         ])
     }
 
@@ -37,16 +35,8 @@ class FeedlaneDataset(Dataset):
         self.root_dir = root_dir
         self.phase = phase
         self.transform = transform
-        self.label_dict = {
-            'empty': 0.0,
-            'minimal': 1.0,
-            'normal': 2.0,
-            'full': 3.0,
-        }
         self.img_paths = []
         self.img_labels = []
-        self.img_extentions = ["*.jpg"]
-        self.dataset_ratio = np.array([0.8, 0.2, 0]) # (train, val, test) ratio
         self.load_dataset()
 
     def __len__(self):
@@ -66,21 +56,11 @@ class FeedlaneDataset(Dataset):
 
     def load_dataset(self):
         for cls in os.listdir(os.path.join(self.root_dir, self.phase)):
-            if cls in self.label_dict.keys():
+            if cls in FeedlaneConfig.LABEL_DICT.keys():
                 files = []
-                for extention in self.img_extentions:
+                for extention in FeedlaneConfig.IMG_EXTENSIONS:
                     files.extend(glob.glob(os.path.join(self.root_dir, self.phase,cls, extention)))
-                # if self.phase == "train":
-                #     if cls == "full":
-                #         files = files * 3
-                #     elif cls == "normal":
-                #         files = files * 2
                 self.img_paths.extend(files)
-                self.img_labels.extend([self.label_dict[cls]]*len(files))
+                self.img_labels.extend([FeedlaneConfig.LABEL_DICT[cls]]*len(files))
                 print(f"Class {cls} has {len(files)} file(s)")
         print(f"{self.phase} set have total {len(self.img_labels)} image(s) loaded")
-
-    def get_len_train_val_test(self):
-        n_train, n_val = (len(self)*self.dataset_ratio[:2]).astype(np.int32)
-        n_test = len(self) - n_train - n_val
-        return [n_train, n_val, n_test]

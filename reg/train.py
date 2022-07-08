@@ -9,17 +9,15 @@ import pytorch_lightning as pl
 from torchmetrics.functional import accuracy
 from datetime import datetime
 from PIL import Image
+import time
 
+from config import FeedlaneConfig
 from dataset import FeedlaneDataset, data_transform
 from model import DeepRegression
 
-DATA_DIR = "/content/feedlane/data/classified_data"
-OUTPUT_DIR = "/content/feedlane/output"
-os.makedirs(os.path.join(OUTPUT_DIR, "test"), exist_ok=True)
-
 def dataloader(phase='train'):
     assert phase in ['train', 'val', 'test']
-    dataset_ = FeedlaneDataset(root_dir=DATA_DIR, transform=data_transform[phase], phase=phase)
+    dataset_ = FeedlaneDataset(root_dir=FeedlaneConfig.DATA_DIR, transform=data_transform[phase], phase=phase)
     
     shuffle = True 
     if phase != 'train': shuffle = False
@@ -30,10 +28,9 @@ def prepare():
     # model
     model = DeepRegression()
 
-    ckpt_dir = "/content/feedlane/output/train/lightning_logs/top_val_loss_models"
-    os.makedirs(ckpt_dir, exist_ok=True)
     # checkpoint callback
-    checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=ckpt_dir, save_top_k=2, monitor="val_loss")
+    os.makedirs(FeedlaneConfig.CKPT_DIR, exist_ok=True)
+    checkpoint_callback = pl.callbacks.ModelCheckpoint(dirpath=FeedlaneConfig.CKPT_DIR, save_top_k=2, monitor="val_loss")
 
     # trainer
     trainer = pl.Trainer(max_epochs=200, check_val_every_n_epoch=3, devices=1, accelerator="gpu", log_every_n_steps=3, callbacks=[checkpoint_callback])

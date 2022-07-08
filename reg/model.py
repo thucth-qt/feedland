@@ -3,17 +3,13 @@ import os
 import torch
 from torch import nn
 from torch.nn import functional as F
-from torchvision import transforms, models
+from torchvision import models
 import pytorch_lightning as pl
 import numpy as np
 from torchmetrics.functional import accuracy
 import torchmetrics
 import seaborn as sn
 import matplotlib.pyplot as plt
-
-DATA_DIR = "/content/feedlane/data/classified_data"
-OUTPUT_DIR = "/content/feedlane/output"
-os.makedirs(os.path.join(OUTPUT_DIR, "test"), exist_ok=True)
 
 class DeepRegression(pl.LightningModule):
     def __init__(self):
@@ -107,5 +103,3 @@ class DeepRegression(pl.LightningModule):
         
     def set_transform(self, transform=None):
         self.transform = transform
-
-

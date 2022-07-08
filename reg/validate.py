@@ -7,22 +7,19 @@ from torch.nn import functional as F
 import pytorch_lightning as pl
 from PIL import Image
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
-
-from timm.utils.metrics import accuracy_threshold
+from config import FeedlaneConfig
+from metric import accuracy_threshold
 from model import DeepRegression
 from dataset import data_transform
 
-DATA_DIR = "/content/feedlane/data/classified_data"
-OUTPUT_DIR = "/content/feedlane/output"
-os.makedirs(os.path.join(OUTPUT_DIR, "test"), exist_ok=True)
+TEST_DIR = os.path.join(FeedlaneConfig.OUTPUT_DIR, "test")
+os.makedirs(TEST_DIR, exist_ok=True)
 
-def validate(ckpt_path="/content/feedlane/output/train/lightning_logs/lightning_logs/top_val_loss_models/epoch=92-step=13950.ckpt"):
-    thresholds = [0.5,1.5,2.5]
+def validate(ckpt_path, thresholds=[0.5,1.5,2.5]):
+    assert len(thresholds) == 3
     # thresholds = [0.48, 1.44, 2.35]
     # thresholds = [0.43, 1.44, 2.07]
-    result_file = os.path.join(OUTPUT_DIR, 'test/regression_result.csv')
+    result_file = os.path.join(TEST_DIR, 'regression_result.csv')
     if os.path.isfile(result_file):
         os.remove(result_file)
 
@@ -30,23 +27,17 @@ def validate(ckpt_path="/content/feedlane/output/train/lightning_logs/lightning_
     # model.set_transform(transforms.ToTensor())
     model.eval()
 
-    label_dict = {
-                'empty': 0.0,
-                'minimal': 1.0,
-                'normal': 2.0,
-                'full': 3.0,
-            }
-    classes = label_dict.keys()
     TARGETS = []
     PREDS = []
     PREDS_DICT = {}
-    for class_ in classes:
-        # class_ = ""
+    for classname in FeedlaneConfig.CLASSNAMES:
+        # classname = ""
         SUB_TARGETS = []
         SUB_PREDS = []
         FILES = []
-        for f in glob.glob(os.path.join("{0}/val/{1}".format(DATA_DIR,class_), "*.jpg")):
-            SUB_TARGETS.append(label_dict[class_])
+        
+        for f in glob.glob(os.path.join(FeedlaneConfig.DATA_VAL_DIR, classname, "*.jpg")):
+            SUB_TARGETS.append(FeedlaneConfig.LABEL_DICT[classname])
             # img = torch.tensor(cv2.imread(file))
             img = Image.open(f)
             img = data_transform['val'](img)
@@ -56,12 +47,12 @@ def validate(ckpt_path="/content/feedlane/output/train/lightning_logs/lightning_
             FILES.append(f)
         # import pdb;pdb.set_trace()
         loss_ = F.mse_loss(torch.tensor(SUB_PREDS), torch.tensor(SUB_TARGETS))
-        acc_ = accuracy_threshold(torch.tensor(SUB_PREDS), torch.tensor(SUB_TARGETS), label_dict, thresholds)
-        print("{0} MSELoss: {1}".format(class_, loss_))
-        print("{0} ACC: {1}".format(class_, acc_))
+        acc_ = accuracy_threshold(torch.tensor(SUB_PREDS), torch.tensor(SUB_TARGETS), FeedlaneConfig.LABEL_DICT, thresholds)
+        print("{0} MSELoss: {1}".format(classname, loss_))
+        print("{0} ACC: {1}".format(classname, acc_))
         TARGETS.extend(SUB_TARGETS)
         PREDS.extend(SUB_PREDS)
-        PREDS_DICT[class_] = SUB_PREDS
+        PREDS_DICT[classname] = SUB_PREDS
 
 
         with open(result_file, 'a') as out_file:
@@ -69,7 +60,7 @@ def validate(ckpt_path="/content/feedlane/output/train/lightning_logs/lightning_
                 out_file.write('{0},{1}\n'.format(filename, output))
     
     loss_ = F.mse_loss(torch.tensor(PREDS), torch.tensor(TARGETS))
-    acc = accuracy_threshold(torch.tensor(PREDS), torch.tensor(TARGETS), label_dict, thresholds)
+    acc = accuracy_threshold(torch.tensor(PREDS), torch.tensor(TARGETS), FeedlaneConfig.LABEL_DICT, thresholds)
     
     print("----------------------------------")
     print("\n\nTotal ACC: ", acc)
@@ -78,4 +69,4 @@ def validate(ckpt_path="/content/feedlane/output/train/lightning_logs/lightning_
     return PREDS_DICT
 
 if __name__=="__main__":
-    validate("/content/feedlane/output/train/lightning_logs/lightning_logs/top_val_loss_models/epoch=92-step=13950.ckpt")
+    validate(ckpt_path=FeedlaneConfig.CKPT_PATH, thresholds=[0.35000000000000003, 1.28, 2.07])
